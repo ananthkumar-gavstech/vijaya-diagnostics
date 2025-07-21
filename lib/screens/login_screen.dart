@@ -36,9 +36,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _setDefaultEmails() {
     _crewEmailController.text = 'crew.member@example.com';
-    _crewPasswordController.text = '••••••••••';
+    _crewPasswordController.text = 'test123';
     _adminEmailController.text = 'admin@example.com';
-    _adminPasswordController.text = '••••••••••';
+    _adminPasswordController.text = 'admin123';
   }
 
   TextEditingController get _currentEmailController {
@@ -132,11 +132,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: const Center(
                               child: Text(
-                                'Vijay',
+                                'VD',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                                  fontSize: 16,
                                 ),
                               ),
                             ),

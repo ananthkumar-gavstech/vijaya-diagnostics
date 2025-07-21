@@ -18,13 +18,13 @@ class _AdminDashboardState extends State<AdminDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Map<String, String> _selectedCrewMembers = {};
-  
+
   final _taskFormKey = GlobalKey<FormState>();
   final _locationNameController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
   bool _showTaskForm = false;
-  
+
   final _crewFormKey = GlobalKey<FormState>();
   final _crewEmailController = TextEditingController();
   final _crewNameController = TextEditingController();
@@ -62,8 +62,9 @@ class _AdminDashboardState extends State<AdminDashboard>
     if (selectedUserId == null) return;
 
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    final crewMember = taskProvider.crewMembers
-        .firstWhere((member) => member.id == selectedUserId);
+    final crewMember = taskProvider.crewMembers.firstWhere(
+      (member) => member.id == selectedUserId,
+    );
 
     final success = await taskProvider.assignTask(
       taskId,
@@ -88,12 +89,14 @@ class _AdminDashboardState extends State<AdminDashboard>
     if (!_taskFormKey.currentState!.validate()) return;
 
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    final latitude = _latitudeController.text.isNotEmpty 
-        ? double.tryParse(_latitudeController.text) 
-        : null;
-    final longitude = _longitudeController.text.isNotEmpty 
-        ? double.tryParse(_longitudeController.text) 
-        : null;
+    final latitude =
+        _latitudeController.text.isNotEmpty
+            ? double.tryParse(_latitudeController.text)
+            : null;
+    final longitude =
+        _longitudeController.text.isNotEmpty
+            ? double.tryParse(_longitudeController.text)
+            : null;
 
     final success = await taskProvider.createTask(
       _locationNameController.text,
@@ -148,6 +151,36 @@ class _AdminDashboardState extends State<AdminDashboard>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton:
+          ResponsiveHelper.isMobile(context)
+              ? _tabController.index == 0
+                  ? ElevatedButton.icon(
+                    onPressed:
+                        () => setState(() => _showTaskForm = !_showTaskForm),
+                    icon: Icon(_showTaskForm ? Icons.close : Icons.add),
+                    label: Text(_showTaskForm ? 'Cancel' : 'Create New Task'),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: const Color(0xFF20B2AA),
+                      foregroundColor: Colors.white,
+                    ),
+                  )
+                  : ElevatedButton.icon(
+                    onPressed:
+                        () => setState(() => _showCrewForm = !_showCrewForm),
+                    icon: Icon(_showCrewForm ? Icons.close : Icons.person_add),
+                    label: Text(_showCrewForm ? 'Cancel' : 'Add Crew Member'),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: const Color(0xFF20B2AA),
+                      foregroundColor: Colors.white,
+                    ),
+                  )
+              : null,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -164,22 +197,23 @@ class _AdminDashboardState extends State<AdminDashboard>
               ),
               child: const Center(
                 child: Text(
-                  'Vijay',
+                  'VD',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            // Header Section
+            Text(
               'Crew Manager',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
               ),
             ),
           ],
@@ -189,27 +223,15 @@ class _AdminDashboardState extends State<AdminDashboard>
             builder: (context, authProvider, child) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Text(
-                      authProvider.currentUser?.email ?? '',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                      ),
+                child: TextButton(
+                  onPressed: _signOut,
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: Color(0xFF20B2AA),
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(width: 16),
-                    TextButton(
-                      onPressed: _signOut,
-                      child: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          color: Color(0xFF20B2AA),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -217,119 +239,114 @@ class _AdminDashboardState extends State<AdminDashboard>
         ],
       ),
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          margin: const EdgeInsets.all(16),
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Admin Dashboard',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  _tabController.animateTo(0);
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _tabController.index == 0
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Admin Dashboard',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              _tabController.animateTo(0);
+                              setState(() {});
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    _tabController.index == 0
                                         ? const Color(0xFF6C5CE7)
                                         : Colors.transparent,
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(4),
-                                      bottomLeft: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'All Tasks',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _tabController.index == 0
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  bottomLeft: Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                'All Tasks',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color:
+                                      _tabController.index == 0
                                           ? Colors.white
                                           : Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  _tabController.animateTo(1);
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: _tabController.index == 1
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              _tabController.animateTo(1);
+                              setState(() {});
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    _tabController.index == 1
                                         ? const Color(0xFF6C5CE7)
                                         : Colors.transparent,
-                                    borderRadius: const BorderRadius.only(
-                                      topRight: Radius.circular(4),
-                                      bottomRight: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Crew Availability',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _tabController.index == 1
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(12),
+                                  bottomRight: Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                'Crew Availability',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color:
+                                      _tabController.index == 1
                                           ? Colors.white
                                           : Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _tabController,
-                    builder: (context, child) {
-                      return IndexedStack(
-                        index: _tabController.index,
-                        children: [
-                          _buildTasksTab(),
-                          _buildAvailabilityTab(),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            Expanded(
+              child: AnimatedBuilder(
+                animation: _tabController,
+                builder: (context, child) {
+                  return IndexedStack(
+                    index: _tabController.index,
+                    children: [_buildTasksTab(), _buildAvailabilityTab()],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -362,7 +379,9 @@ class _AdminDashboardState extends State<AdminDashboard>
         }
 
         return Padding(
-          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -371,19 +390,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 children: [
                   const Text(
                     'Duty Assignments',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => setState(() => _showTaskForm = !_showTaskForm),
-                    icon: Icon(_showTaskForm ? Icons.close : Icons.add),
-                    label: Text(_showTaskForm ? 'Cancel' : 'Create New Task'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF20B2AA),
-                      foregroundColor: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -403,7 +410,11 @@ class _AdminDashboardState extends State<AdminDashboard>
                               labelText: 'Location Name',
                               border: OutlineInputBorder(),
                             ),
-                            validator: (value) => value?.isEmpty == true ? 'Please enter location name' : null,
+                            validator:
+                                (value) =>
+                                    value?.isEmpty == true
+                                        ? 'Please enter location name'
+                                        : null,
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -419,7 +430,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                                   validator: (value) {
                                     if (value?.isNotEmpty == true) {
                                       final lat = double.tryParse(value!);
-                                      if (lat == null || lat < -90 || lat > 90) {
+                                      if (lat == null ||
+                                          lat < -90 ||
+                                          lat > 90) {
                                         return 'Invalid latitude (-90 to 90)';
                                       }
                                     }
@@ -439,7 +452,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                                   validator: (value) {
                                     if (value?.isNotEmpty == true) {
                                       final lng = double.tryParse(value!);
-                                      if (lng == null || lng < -180 || lng > 180) {
+                                      if (lng == null ||
+                                          lng < -180 ||
+                                          lng > 180) {
                                         return 'Invalid longitude (-180 to 180)';
                                       }
                                     }
@@ -514,224 +529,212 @@ class _AdminDashboardState extends State<AdminDashboard>
   Widget _buildTaskCard(Task task, List<User> crewMembers) {
     final isUnassigned = task.status == TaskStatus.unassigned;
     final isCompleted = task.status == TaskStatus.completed;
-    
-    return Card(
-      margin: EdgeInsets.only(
-        bottom: ResponsiveHelper.isMobile(context) ? 12 : 16,
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ResponsiveHelper.isMobile(context)
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.locationName,
-                      style: TextStyle(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(task.status),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getStatusText(task.status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        task.locationName,
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(task.status),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getStatusText(task.status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-            
-            if (task.latitude != null && task.longitude != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${task.latitude!.toStringAsFixed(6)}, ${task.longitude!.toStringAsFixed(6)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            
-            const SizedBox(height: 12),
-            
-            if (task.assignedToEmail != null) ...[
-              Row(
-                children: [
-                  const Text('Assigned to: '),
-                  Text(
-                    task.assignedToEmail!,
-                    style: const TextStyle(
-                      color: Color(0xFF20B2AA),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              
-              if (isCompleted && task.completionRemarks != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    border: Border.all(color: Colors.green.shade200),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
+
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: Card(
+        color: Colors.white,
+        margin: EdgeInsets.only(
+          bottom: ResponsiveHelper.isMobile(context) ? 12 : 16,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsiveCardPadding(context),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ResponsiveHelper.isMobile(context)
+                  ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Completion Remarks:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              task.locationName,
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(task.status),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getStatusText(task.status),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    ],
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          task.locationName,
+                          style: TextStyle(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(
+                              context,
+                              16,
+                            ),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        task.completionRemarks!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green.shade600,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(task.status),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _getStatusText(task.status),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
+
+              if (task.latitude != null && task.longitude != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${task.latitude!.toStringAsFixed(6)}, ${task.longitude!.toStringAsFixed(6)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ] else ...[
-              Row(
-                children: [
-                  const Text('Assigned to: '),
-                  const Text(
-                    'Unassigned',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w500,
+
+              const SizedBox(height: 12),
+
+              if (task.assignedToEmail != null) ...[
+                Row(
+                  children: [
+                    const Text('Assigned to: '),
+                    Text(
+                      task.assignedToEmail!,
+                      style: const TextStyle(
+                        color: Color(0xFF20B2AA),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (isCompleted && task.completionRemarks != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      border: Border.all(color: Colors.green.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Completion Remarks:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          task.completionRemarks!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ],
-            
-            if (isUnassigned) ...[
-              SizedBox(height: ResponsiveHelper.isMobile(context) ? 8 : 12),
-              ResponsiveHelper.isMobile(context)
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(
-                        height: 40,
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedCrewMembers[task.id],
-                          hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            isDense: true,
-                          ),
-                          items: crewMembers
-                              .where((member) => member.isAvailable)
-                              .map((member) => DropdownMenuItem(
-                                    value: member.id,
-                                    child: Text(
-                                      member.email,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCrewMembers[task.id] = value!;
-                            });
-                          },
-                        ),
+              ] else ...[
+                Row(
+                  children: [
+                    const Text('Assigned to: '),
+                    const Text(
+                      'Unassigned',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed: _selectedCrewMembers[task.id] != null
-                              ? () => _assignTask(task.id)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF20B2AA),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          child: const Text('Assign', style: TextStyle(fontSize: 14)),
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
+                    ),
+                  ],
+                ),
+              ],
+
+              if (isUnassigned) ...[
+                SizedBox(height: ResponsiveHelper.isMobile(context) ? 8 : 12),
+                ResponsiveHelper.isMobile(context)
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
                           height: 40,
                           child: DropdownButtonFormField<String>(
                             value: _selectedCrewMembers[task.id],
-                            hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
+                            hint: const Text(
+                              'Select Crew...',
+                              style: TextStyle(fontSize: 14),
+                            ),
                             decoration: InputDecoration(
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                               border: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
@@ -740,16 +743,19 @@ class _AdminDashboardState extends State<AdminDashboard>
                               ),
                               isDense: true,
                             ),
-                            items: crewMembers
-                                .where((member) => member.isAvailable)
-                                .map((member) => DropdownMenuItem(
-                                      value: member.id,
-                                      child: Text(
-                                        member.email,
-                                        style: const TextStyle(fontSize: 14),
+                            items:
+                                crewMembers
+                                    .where((member) => member.isAvailable)
+                                    .map(
+                                      (member) => DropdownMenuItem(
+                                        value: member.id,
+                                        child: Text(
+                                          member.email,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
                                       ),
-                                    ))
-                                .toList(),
+                                    )
+                                    .toList(),
                             onChanged: (value) {
                               setState(() {
                                 _selectedCrewMembers[task.id] = value!;
@@ -757,29 +763,98 @@ class _AdminDashboardState extends State<AdminDashboard>
                             },
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        height: 40,
-                        child: ElevatedButton(
-                          onPressed: _selectedCrewMembers[task.id] != null
-                              ? () => _assignTask(task.id)
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF20B2AA),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            onPressed:
+                                _selectedCrewMembers[task.id] != null
+                                    ? () => _assignTask(task.id)
+                                    : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF20B2AA),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: const Text(
+                              'Assign',
+                              style: TextStyle(fontSize: 14),
+                            ),
                           ),
-                          child: const Text('Assign', style: TextStyle(fontSize: 14)),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    )
+                    : Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: DropdownButtonFormField<String>(
+                              value: _selectedCrewMembers[task.id],
+                              hint: const Text(
+                                'Select Crew...',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                isDense: true,
+                              ),
+                              items:
+                                  crewMembers
+                                      .where((member) => member.isAvailable)
+                                      .map(
+                                        (member) => DropdownMenuItem(
+                                          value: member.id,
+                                          child: Text(
+                                            member.email,
+                                            style: const TextStyle(fontSize: 14),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCrewMembers[task.id] = value!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            onPressed:
+                                _selectedCrewMembers[task.id] != null
+                                    ? () => _assignTask(task.id)
+                                    : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF20B2AA),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            child: const Text(
+                              'Assign',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -812,7 +887,9 @@ class _AdminDashboardState extends State<AdminDashboard>
         }
 
         return Padding(
-          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -821,19 +898,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 children: [
                   const Text(
                     'Crew Availability Status',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => setState(() => _showCrewForm = !_showCrewForm),
-                    icon: Icon(_showCrewForm ? Icons.close : Icons.person_add),
-                    label: Text(_showCrewForm ? 'Cancel' : 'Add Crew Member'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF20B2AA),
-                      foregroundColor: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -855,8 +920,11 @@ class _AdminDashboardState extends State<AdminDashboard>
                             ),
                             keyboardType: TextInputType.emailAddress,
                             validator: (value) {
-                              if (value?.isEmpty == true) return 'Please enter email';
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+                              if (value?.isEmpty == true)
+                                return 'Please enter email';
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value!)) {
                                 return 'Please enter valid email';
                               }
                               return null;
@@ -869,7 +937,11 @@ class _AdminDashboardState extends State<AdminDashboard>
                               labelText: 'Full Name',
                               border: OutlineInputBorder(),
                             ),
-                            validator: (value) => value?.isEmpty == true ? 'Please enter name' : null,
+                            validator:
+                                (value) =>
+                                    value?.isEmpty == true
+                                        ? 'Please enter name'
+                                        : null,
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
@@ -928,12 +1000,10 @@ class _AdminDashboardState extends State<AdminDashboard>
                       const SizedBox(height: 4),
                       Text(
                         member.email,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
-                      if (member.latitude != null && member.longitude != null) ...[
+                      if (member.latitude != null &&
+                          member.longitude != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           'Location: ${member.latitude!.toStringAsFixed(6)}, ${member.longitude!.toStringAsFixed(6)}',
@@ -947,11 +1017,15 @@ class _AdminDashboardState extends State<AdminDashboard>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: member.isAvailable 
-                        ? const Color(0xFF20B2AA) 
-                        : const Color(0xFFDC3545),
+                    color:
+                        member.isAvailable
+                            ? const Color(0xFF20B2AA)
+                            : const Color(0xFFDC3545),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
