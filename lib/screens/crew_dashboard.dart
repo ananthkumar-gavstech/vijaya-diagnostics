@@ -49,16 +49,17 @@ class _CrewDashboardState extends State<CrewDashboard> {
   Future<void> _checkOnboardingStatus() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
-    
+
     if (user != null) {
       setState(() {
-        _onboardingCompleted = user.onboardingStatus == OnboardingStatus.verified;
+        _onboardingCompleted =
+            user.onboardingStatus == OnboardingStatus.verified;
         if (user.latitude != null && user.longitude != null) {
           _userLatitude = user.latitude;
           _userLongitude = user.longitude;
         }
       });
-      
+
       if (_onboardingCompleted) {
         await _loadAssignedTasks();
       }
@@ -70,7 +71,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     final userId = authProvider.currentUser?.id ?? '';
-    
+
     final tasks = await taskProvider.getTasksForUser(userId);
     setState(() {
       _assignedTasks = tasks;
@@ -79,9 +80,12 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
   Future<void> _acceptDuty(String taskId) async {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    
-    final success = await taskProvider.updateTaskStatus(taskId, app_task.TaskStatus.enRoute);
-    
+
+    final success = await taskProvider.updateTaskStatus(
+      taskId,
+      app_task.TaskStatus.enRoute,
+    );
+
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -95,7 +99,8 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
   Future<void> _getCurrentLocation() async {
     try {
-      final position = await html.window.navigator.geolocation.getCurrentPosition();
+      final position =
+          await html.window.navigator.geolocation.getCurrentPosition();
       final latitude = position.coords!.latitude!.toDouble();
       final longitude = position.coords!.longitude!.toDouble();
 
@@ -109,16 +114,20 @@ class _CrewDashboardState extends State<CrewDashboard> {
   }
 
   bool _isWithinCheckInRange(app_task.Task task) {
-    if (_currentLatitude == null || _currentLongitude == null || 
-        task.latitude == null || task.longitude == null) {
+    if (_currentLatitude == null ||
+        _currentLongitude == null ||
+        task.latitude == null ||
+        task.longitude == null) {
       return false;
     }
-    
+
     final distance = _calculateDistance(
-      _currentLatitude!, _currentLongitude!, 
-      task.latitude!, task.longitude!
+      _currentLatitude!,
+      _currentLongitude!,
+      task.latitude!,
+      task.longitude!,
     );
-    
+
     return distance <= 1.0; // Within 1 kilometer
   }
 
@@ -132,13 +141,13 @@ class _CrewDashboardState extends State<CrewDashboard> {
     }
 
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    
+
     final success = await taskProvider.updateTaskStatus(
-      taskId, 
+      taskId,
       app_task.TaskStatus.completed,
       completionRemarks: remarks,
     );
-    
+
     if (success && mounted) {
       _remarksController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,40 +163,41 @@ class _CrewDashboardState extends State<CrewDashboard> {
   void _showTaskCompletionDialog(String taskId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Complete Task'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Please enter completion remarks:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _remarksController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Enter your remarks here...',
-                border: OutlineInputBorder(),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Complete Task'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Please enter completion remarks:'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _remarksController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your remarks here...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _completeTask(taskId);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF20B2AA),
+                ),
+                child: const Text('Complete Task'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _completeTask(taskId);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF20B2AA),
-            ),
-            child: const Text('Complete Task'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -204,9 +214,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking file: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
     }
   }
 
@@ -215,7 +225,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
       if (!_formKey.currentState!.validate()) return;
       if (_selectedFile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please upload your Aadhaar card photo')),
+          const SnackBar(
+            content: Text('Please upload your Aadhaar card photo'),
+          ),
         );
         return;
       }
@@ -249,16 +261,18 @@ class _CrewDashboardState extends State<CrewDashboard> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('ID verification submitted! Now capture your location.'),
+              content: Text(
+                'ID verification submitted! Now capture your location.',
+              ),
               backgroundColor: Color(0xFF20B2AA),
             ),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error submitting data: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error submitting data: $e')));
         }
       } finally {
         setState(() {
@@ -276,7 +290,8 @@ class _CrewDashboardState extends State<CrewDashboard> {
     });
 
     try {
-      final position = await html.window.navigator.geolocation.getCurrentPosition();
+      final position =
+          await html.window.navigator.geolocation.getCurrentPosition();
       final latitude = position.coords!.latitude!.toDouble();
       final longitude = position.coords!.longitude!.toDouble();
 
@@ -289,7 +304,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
       // Update onboarding status in Firebase first
       if (userId.isNotEmpty) {
         try {
-          await FirebaseService().updateUserOnboardingStatus(userId, OnboardingStatus.verified);
+          await FirebaseService().updateUserOnboardingStatus(
+            userId,
+            OnboardingStatus.verified,
+          );
         } catch (e) {
           print('Error updating onboarding status: $e');
         }
@@ -314,9 +332,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error capturing location: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error capturing location: $e')));
       }
     } finally {
       setState(() {
@@ -327,9 +345,12 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
   Future<void> _checkInToTask(String taskId) async {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    
-    final success = await taskProvider.updateTaskStatus(taskId, app_task.TaskStatus.checkedIn);
-    
+
+    final success = await taskProvider.updateTaskStatus(
+      taskId,
+      app_task.TaskStatus.checkedIn,
+    );
+
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -368,22 +389,22 @@ class _CrewDashboardState extends State<CrewDashboard> {
               ),
               child: const Center(
                 child: Text(
-                  'Vijay',
+                  'VD',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Crew Manager',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
               ),
             ),
           ],
@@ -393,27 +414,15 @@ class _CrewDashboardState extends State<CrewDashboard> {
             builder: (context, authProvider, child) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Text(
-                      authProvider.currentUser?.email ?? '',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                      ),
+                child: TextButton(
+                  onPressed: _signOut,
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: Color(0xFF20B2AA),
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(width: 16),
-                    TextButton(
-                      onPressed: _signOut,
-                      child: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          color: Color(0xFF20B2AA),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -428,27 +437,26 @@ class _CrewDashboardState extends State<CrewDashboard> {
     return Center(
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: ResponsiveHelper.isMobile(context) ? 
-            MediaQuery.of(context).size.width * 0.95 : 600,
+          maxWidth:
+              ResponsiveHelper.isMobile(context)
+                  ? MediaQuery.of(context).size.width * 0.95
+                  : 600,
         ),
         margin: ResponsiveHelper.getResponsiveMargin(context),
         child: Card(
           elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Padding(
-            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
+            padding: EdgeInsets.all(
+              ResponsiveHelper.getResponsiveCardPadding(context),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   'Crew Onboarding',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 if (_currentStep == 0) _buildStep1(),
@@ -467,10 +475,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
       children: [
         const Text(
           'Step 1: Verify Your ID',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 24),
         Form(
@@ -480,10 +485,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
             children: [
               const Text(
                 'Aadhaar ID Number',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -511,10 +513,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
               const SizedBox(height: 24),
               const Text(
                 'Aadhaar Card Photo',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -536,11 +535,12 @@ class _CrewDashboardState extends State<CrewDashboard> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (_aadhaarController.text.isNotEmpty && 
-                             _selectedFile != null && 
-                             !_isLoading)
-                      ? _submitOnboarding
-                      : null,
+                  onPressed:
+                      (_aadhaarController.text.isNotEmpty &&
+                              _selectedFile != null &&
+                              !_isLoading)
+                          ? _submitOnboarding
+                          : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF20B2AA),
                     foregroundColor: Colors.white,
@@ -549,16 +549,19 @@ class _CrewDashboardState extends State<CrewDashboard> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text('Next'),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : const Text('Next'),
                 ),
               ),
             ],
@@ -574,18 +577,12 @@ class _CrewDashboardState extends State<CrewDashboard> {
       children: [
         const Text(
           'Step 2: Capture Your Location',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 24),
         const Text(
           'We need your location to assign nearby tasks to you.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 24),
         if (_locationCaptured) ...[
@@ -610,7 +607,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
                       ),
                       Text(
                         'Lat: ${_userLatitude?.toStringAsFixed(6)}, Lng: ${_userLongitude?.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -652,16 +652,37 @@ class _CrewDashboardState extends State<CrewDashboard> {
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, child) {
         return SingleChildScrollView(
-          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context),
+          ),
           child: LayoutBuilder(
             builder: (context, constraints) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header Section
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: ResponsiveHelper.isMobile(context) ? 16 : 24,
+                    ),
+                    child: Text(
+                      'Welcome, ${Provider.of<AuthProvider>(context).currentUser?.name ?? 'Crew Member'}!',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(
+                          context,
+                          24,
+                        ),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
                   // Your Registered Location Section
                   _buildLocationSection(),
-                  SizedBox(height: ResponsiveHelper.isMobile(context) ? 24 : 32),
-                  
+                  SizedBox(
+                    height: ResponsiveHelper.isMobile(context) ? 24 : 32,
+                  ),
+
                   // Today's Duty Assignment Section
                   _buildDutyAssignmentSection(),
                 ],
@@ -676,7 +697,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
   Widget _buildLocationSection() {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsiveCardPadding(context),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -713,10 +736,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
           ] else ...[
             const Text(
               'Location not available',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
           SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
@@ -756,10 +776,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
               children: [
                 const Text(
                   'Tap refresh to get current location',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const SizedBox(width: 8),
                 if (_currentLatitude == null)
@@ -818,10 +835,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
                   SizedBox(width: 12),
                   Text(
                     'No duty assigned for today',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -832,16 +846,24 @@ class _CrewDashboardState extends State<CrewDashboard> {
     }
 
     final task = _assignedTasks.first;
-    final distance = (_userLatitude != null && 
-                     _userLongitude != null && 
-                     task.latitude != null && 
-                     task.longitude != null)
-        ? _calculateDistance(_userLatitude!, _userLongitude!, task.latitude!, task.longitude!)
-        : 0.0;
+    final distance =
+        (_userLatitude != null &&
+                _userLongitude != null &&
+                task.latitude != null &&
+                task.longitude != null)
+            ? _calculateDistance(
+              _userLatitude!,
+              _userLongitude!,
+              task.latitude!,
+              task.longitude!,
+            )
+            : 0.0;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsiveCardPadding(context),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -866,14 +888,16 @@ class _CrewDashboardState extends State<CrewDashboard> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Notification-style assignment card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF20B2AA).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF20B2AA).withOpacity(0.3)),
+              border: Border.all(
+                color: const Color(0xFF20B2AA).withOpacity(0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,7 +941,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _getStatusColor(task.status),
                         borderRadius: BorderRadius.circular(12),
@@ -934,11 +961,15 @@ class _CrewDashboardState extends State<CrewDashboard> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Distance and coordinates
                 Row(
                   children: [
-                    Icon(Icons.straighten, size: 16, color: Colors.grey.shade600),
+                    Icon(
+                      Icons.straighten,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '${distance.toStringAsFixed(1)} km away',
@@ -967,9 +998,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
                     ],
                   ),
                 ],
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Action buttons
                 if (task.status == app_task.TaskStatus.assigned) ...[
                   Row(
@@ -987,29 +1018,38 @@ class _CrewDashboardState extends State<CrewDashboard> {
                           ),
                           child: const Text(
                             'Accept Duty',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isWithinCheckInRange(task) ? () => _checkInToTask(task.id) : null,
+                          onPressed:
+                              _isWithinCheckInRange(task)
+                                  ? () => _checkInToTask(task.id)
+                                  : null,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey,
-                            side: BorderSide(color: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey),
+                            foregroundColor:
+                                _isWithinCheckInRange(task)
+                                    ? const Color(0xFF20B2AA)
+                                    : Colors.grey,
+                            side: BorderSide(
+                              color:
+                                  _isWithinCheckInRange(task)
+                                      ? const Color(0xFF20B2AA)
+                                      : Colors.grey,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           child: Text(
-                            _isWithinCheckInRange(task) ? 'Check In' : 'Too Far (${distance.toStringAsFixed(1)}km)',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            _isWithinCheckInRange(task)
+                                ? 'Check In'
+                                : 'Too Far (${distance.toStringAsFixed(1)}km)',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -1019,20 +1059,31 @@ class _CrewDashboardState extends State<CrewDashboard> {
                   Container(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: _isWithinCheckInRange(task) ? () => _checkInToTask(task.id) : null,
+                      onPressed:
+                          _isWithinCheckInRange(task)
+                              ? () => _checkInToTask(task.id)
+                              : null,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey,
-                        side: BorderSide(color: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey),
+                        foregroundColor:
+                            _isWithinCheckInRange(task)
+                                ? const Color(0xFF20B2AA)
+                                : Colors.grey,
+                        side: BorderSide(
+                          color:
+                              _isWithinCheckInRange(task)
+                                  ? const Color(0xFF20B2AA)
+                                  : Colors.grey,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
-                        _isWithinCheckInRange(task) ? 'Check In Now' : 'Get Closer to Check In (${distance.toStringAsFixed(1)}km away)',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        _isWithinCheckInRange(task)
+                            ? 'Check In Now'
+                            : 'Get Closer to Check In (${distance.toStringAsFixed(1)}km away)',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -1050,7 +1101,11 @@ class _CrewDashboardState extends State<CrewDashboard> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green.shade600,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Checked In - Duty in Progress',
@@ -1077,9 +1132,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
                           ),
                           child: const Text(
                             'Complete Task',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -1100,7 +1153,11 @@ class _CrewDashboardState extends State<CrewDashboard> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.task_alt, color: Colors.blue.shade600, size: 20),
+                            Icon(
+                              Icons.task_alt,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Duty Completed',
@@ -1112,7 +1169,8 @@ class _CrewDashboardState extends State<CrewDashboard> {
                           ],
                         ),
                       ),
-                      if (task.completionRemarks != null && task.completionRemarks!.isNotEmpty) ...[
+                      if (task.completionRemarks != null &&
+                          task.completionRemarks!.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
@@ -1156,7 +1214,6 @@ class _CrewDashboardState extends State<CrewDashboard> {
     );
   }
 
-
   Color _getStatusColor(app_task.TaskStatus status) {
     switch (status) {
       case app_task.TaskStatus.assigned:
@@ -1187,18 +1244,26 @@ class _CrewDashboardState extends State<CrewDashboard> {
     }
   }
 
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double earthRadius = 6371; // Earth's radius in kilometers
-    
+
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
-    
-    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_degreesToRadians(lat1)) * math.cos(_degreesToRadians(lat2)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    
+
+    double a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
     double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
+
     return earthRadius * c;
   }
 
