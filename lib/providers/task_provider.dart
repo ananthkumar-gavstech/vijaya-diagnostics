@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import '../models/task.dart' as app_task;
+import '../models/user.dart';
+import '../services/firebase_service.dart';
+
+class TaskProvider extends ChangeNotifier {
+  List<app_task.Task> _tasks = [];
+  List<User> _crewMembers = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<app_task.Task> get tasks => _tasks;
+  List<User> get crewMembers => _crewMembers;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  final FirebaseService _firebaseService = FirebaseService();
+
+  Future<void> loadTasks() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _tasks = await _firebaseService.getTasks();
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadCrewMembers() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _crewMembers = await _firebaseService.getCrewMembers();
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> assignTask(String taskId, String userId, String userEmail) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _firebaseService.assignTask(taskId, userId, userEmail);
+      await loadTasks();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateUserAvailability(String userId, bool isAvailable) async {
+    try {
+      await _firebaseService.updateUserAvailability(userId, isAvailable);
+      await loadCrewMembers();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+}
