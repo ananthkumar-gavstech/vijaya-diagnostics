@@ -272,12 +272,18 @@ class FirebaseService {
     }
   }
 
-  Future<void> updateTaskStatus(String taskId, app_task.TaskStatus status) async {
+  Future<void> updateTaskStatus(String taskId, app_task.TaskStatus status, {String? completionRemarks}) async {
     try {
-      await firestore.collection('tasks').doc(taskId).update({
+      final updateData = {
         'status': status.toString(),
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      };
+      
+      if (completionRemarks != null) {
+        updateData['completionRemarks'] = completionRemarks;
+      }
+      
+      await firestore.collection('tasks').doc(taskId).update(updateData);
     } catch (e) {
       throw Exception('Failed to update task status: $e');
     }

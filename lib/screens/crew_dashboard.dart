@@ -24,9 +24,12 @@ class _CrewDashboardState extends State<CrewDashboard> {
   int _currentStep = 0;
   double? _userLatitude;
   double? _userLongitude;
+  double? _currentLatitude;
+  double? _currentLongitude;
   bool _locationCaptured = false;
   bool _onboardingCompleted = false;
   List<app_task.Task> _assignedTasks = [];
+  final TextEditingController _remarksController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
   @override
   void dispose() {
     _aadhaarController.dispose();
+    _remarksController.dispose();
     super.dispose();
   }
 
@@ -51,6 +55,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
         _userLongitude = user.longitude;
       });
       await _loadAssignedTasks();
+      await _getCurrentLocation();
     }
   }
 
@@ -79,6 +84,104 @@ class _CrewDashboardState extends State<CrewDashboard> {
       );
       await _loadAssignedTasks();
     }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      final position = await html.window.navigator.geolocation.getCurrentPosition();
+      final latitude = position.coords!.latitude!.toDouble();
+      final longitude = position.coords!.longitude!.toDouble();
+
+      setState(() {
+        _currentLatitude = latitude;
+        _currentLongitude = longitude;
+      });
+    } catch (e) {
+      print('Error getting current location: $e');
+    }
+  }
+
+  bool _isWithinCheckInRange(app_task.Task task) {
+    if (_currentLatitude == null || _currentLongitude == null || 
+        task.latitude == null || task.longitude == null) {
+      return false;
+    }
+    
+    final distance = _calculateDistance(
+      _currentLatitude!, _currentLongitude!, 
+      task.latitude!, task.longitude!
+    );
+    
+    return distance <= 1.0; // Within 1 kilometer
+  }
+
+  Future<void> _completeTask(String taskId) async {
+    final remarks = _remarksController.text.trim();
+    if (remarks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter completion remarks')),
+      );
+      return;
+    }
+
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    
+    final success = await taskProvider.updateTaskStatus(
+      taskId, 
+      app_task.TaskStatus.completed,
+      completionRemarks: remarks,
+    );
+    
+    if (success && mounted) {
+      _remarksController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task completed successfully!'),
+          backgroundColor: Color(0xFF20B2AA),
+        ),
+      );
+      await _loadAssignedTasks();
+    }
+  }
+
+  void _showTaskCompletionDialog(String taskId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Complete Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Please enter completion remarks:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _remarksController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Enter your remarks here...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _completeTask(taskId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF20B2AA),
+            ),
+            child: const Text('Complete Task'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickFile() async {
@@ -593,6 +696,58 @@ class _CrewDashboardState extends State<CrewDashboard> {
               ),
             ),
           ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Text(
+                'Your Current Location',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _getCurrentLocation,
+                child: const Icon(
+                  Icons.refresh,
+                  size: 18,
+                  color: Color(0xFF20B2AA),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_currentLatitude != null && _currentLongitude != null) ...[
+            Text(
+              '${_currentLatitude!.toStringAsFixed(6)}, ${_currentLongitude!.toStringAsFixed(6)}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                const Text(
+                  'Tap refresh to get current location',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (_currentLatitude == null)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -818,17 +973,87 @@ class _CrewDashboardState extends State<CrewDashboard> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => _checkInToTask(task.id),
+                          onPressed: _isWithinCheckInRange(task) ? () => _checkInToTask(task.id) : null,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF20B2AA),
-                            side: const BorderSide(color: Color(0xFF20B2AA)),
+                            foregroundColor: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey,
+                            side: BorderSide(color: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            _isWithinCheckInRange(task) ? 'Check In' : 'Too Far (${distance.toStringAsFixed(1)}km)',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (task.status == app_task.TaskStatus.enRoute) ...[
+                  Container(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _isWithinCheckInRange(task) ? () => _checkInToTask(task.id) : null,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey,
+                        side: BorderSide(color: _isWithinCheckInRange(task) ? const Color(0xFF20B2AA) : Colors.grey),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        _isWithinCheckInRange(task) ? 'Check In Now' : 'Get Closer to Check In (${distance.toStringAsFixed(1)}km away)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else if (task.status == app_task.TaskStatus.checkedIn) ...[
+                  Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          border: Border.all(color: Colors.green.shade200),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Checked In - Duty in Progress',
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _showTaskCompletionDialog(task.id),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           child: const Text(
-                            'Check In',
+                            'Complete Task',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -837,53 +1062,67 @@ class _CrewDashboardState extends State<CrewDashboard> {
                       ),
                     ],
                   ),
-                ] else if (task.status == app_task.TaskStatus.checkedIn) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      border: Border.all(color: Colors.green.shade200),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Checked In - Duty in Progress',
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ] else if (task.status == app_task.TaskStatus.completed) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      border: Border.all(color: Colors.blue.shade200),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.task_alt, color: Colors.blue.shade600, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Duty Completed',
-                          style: TextStyle(
-                            color: Colors.blue.shade700,
-                            fontWeight: FontWeight.w600,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          border: Border.all(color: Colors.blue.shade200),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.task_alt, color: Colors.blue.shade600, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Duty Completed',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (task.completionRemarks != null && task.completionRemarks!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            border: Border.all(color: Colors.grey.shade200),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Completion Remarks:',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                task.completionRemarks!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ],

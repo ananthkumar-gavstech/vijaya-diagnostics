@@ -125,9 +125,9 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateTaskStatus(String taskId, app_task.TaskStatus status) async {
+  Future<bool> updateTaskStatus(String taskId, app_task.TaskStatus status, {String? completionRemarks}) async {
     try {
-      await _firebaseService.updateTaskStatus(taskId, status);
+      await _firebaseService.updateTaskStatus(taskId, status, completionRemarks: completionRemarks);
       await loadTasks();
       return true;
     } catch (e) {

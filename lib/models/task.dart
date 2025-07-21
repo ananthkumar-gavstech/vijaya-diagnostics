@@ -6,6 +6,7 @@ class Task {
   final String? assignedToUserId;
   final String? assignedToEmail;
   final TaskStatus status;
+  final String? completionRemarks;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +18,7 @@ class Task {
     this.assignedToUserId,
     this.assignedToEmail,
     this.status = TaskStatus.unassigned,
+    this.completionRemarks,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,6 +35,7 @@ class Task {
         (status) => status.toString() == map['status'],
         orElse: () => TaskStatus.unassigned,
       ),
+      completionRemarks: map['completionRemarks'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
     );
@@ -47,6 +50,7 @@ class Task {
       'assignedToUserId': assignedToUserId,
       'assignedToEmail': assignedToEmail,
       'status': status.toString(),
+      'completionRemarks': completionRemarks,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
