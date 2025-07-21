@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "vijayadiagnostic",
+          "configurations": {
+            "web": "1:475330667611:web:b63a3ad7c2b17992074b7e"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "site": "vijayadiagnostic",
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
