@@ -6,6 +6,9 @@ class User {
   final bool isAvailable;
   final double? latitude;
   final double? longitude;
+  final String? aadhaarNumber;
+  final String? aadhaarPhotoUrl;
+  final OnboardingStatus onboardingStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +20,9 @@ class User {
     this.isAvailable = true,
     this.latitude,
     this.longitude,
+    this.aadhaarNumber,
+    this.aadhaarPhotoUrl,
+    this.onboardingStatus = OnboardingStatus.pending,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,6 +39,12 @@ class User {
       isAvailable: map['isAvailable'] ?? true,
       latitude: map['latitude']?.toDouble(),
       longitude: map['longitude']?.toDouble(),
+      aadhaarNumber: map['aadhaarNumber'],
+      aadhaarPhotoUrl: map['aadhaarPhotoUrl'],
+      onboardingStatus: OnboardingStatus.values.firstWhere(
+        (status) => status.toString() == map['onboardingStatus'],
+        orElse: () => OnboardingStatus.pending,
+      ),
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
     );
@@ -47,6 +59,9 @@ class User {
       'isAvailable': isAvailable,
       'latitude': latitude,
       'longitude': longitude,
+      'aadhaarNumber': aadhaarNumber,
+      'aadhaarPhotoUrl': aadhaarPhotoUrl,
+      'onboardingStatus': onboardingStatus.toString(),
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
@@ -56,4 +71,10 @@ class User {
 enum UserType {
   crewMember,
   admin,
+}
+
+enum OnboardingStatus {
+  pending,
+  verified,
+  rejected,
 }

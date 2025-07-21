@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
 import '../providers/task_provider.dart';
 import '../services/firebase_service.dart';
-import '../models/onboarding_data.dart';
 import '../models/task.dart' as app_task;
 
 class CrewDashboard extends StatefulWidget {
@@ -110,16 +109,11 @@ class _CrewDashboardState extends State<CrewDashboard> {
           );
         }
 
-        final onboardingData = OnboardingData(
-          userId: userId,
-          aadhaarNumber: _aadhaarController.text,
-          aadhaarPhotoUrl: photoUrl,
-          status: OnboardingStatus.pending,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+        await FirebaseService().updateUserOnboardingData(
+          userId,
+          _aadhaarController.text,
+          photoUrl,
         );
-
-        await FirebaseService().saveOnboardingData(onboardingData);
 
         setState(() {
           _currentStep = 1;

@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user.dart' as app_user;
 import '../models/task.dart' as app_task;
-import '../models/onboarding_data.dart';
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -187,14 +186,16 @@ class FirebaseService {
     }
   }
 
-  Future<void> saveOnboardingData(OnboardingData data) async {
+  Future<void> updateUserOnboardingData(String userId, String aadhaarNumber, String? aadhaarPhotoUrl) async {
     try {
-      await firestore
-          .collection('onboarding')
-          .doc(data.userId)
-          .set(data.toMap());
+      await firestore.collection('users').doc(userId).update({
+        'aadhaarNumber': aadhaarNumber,
+        'aadhaarPhotoUrl': aadhaarPhotoUrl,
+        'onboardingStatus': app_user.OnboardingStatus.pending.toString(),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
     } catch (e) {
-      throw Exception('Failed to save onboarding data: $e');
+      throw Exception('Failed to update user onboarding data: $e');
     }
   }
 
