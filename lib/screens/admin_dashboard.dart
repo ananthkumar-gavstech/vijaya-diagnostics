@@ -479,30 +479,103 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
+  Color _getStatusColor(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.unassigned:
+        return Colors.red;
+      case TaskStatus.assigned:
+        return const Color(0xFF20B2AA);
+      case TaskStatus.enRoute:
+        return Colors.orange;
+      case TaskStatus.checkedIn:
+        return Colors.blue;
+      case TaskStatus.completed:
+        return Colors.green;
+    }
+  }
+
+  String _getStatusText(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.unassigned:
+        return 'Unassigned';
+      case TaskStatus.assigned:
+        return 'Assigned';
+      case TaskStatus.enRoute:
+        return 'En Route';
+      case TaskStatus.checkedIn:
+        return 'Checked In';
+      case TaskStatus.completed:
+        return 'Completed';
+    }
+  }
+
   Widget _buildTaskCard(Task task, List<User> crewMembers) {
-    final isAssigned = task.status == TaskStatus.assigned;
+    final isUnassigned = task.status == TaskStatus.unassigned;
+    final isCompleted = task.status == TaskStatus.completed;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              task.locationName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    task.locationName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(task.status),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _getStatusText(task.status),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            if (isAssigned) ...[
+            
+            if (task.latitude != null && task.longitude != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${task.latitude!.toStringAsFixed(6)}, ${task.longitude!.toStringAsFixed(6)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            
+            const SizedBox(height: 12),
+            
+            if (task.assignedToEmail != null) ...[
               Row(
                 children: [
                   const Text('Assigned to: '),
                   Text(
-                    task.assignedToEmail ?? '',
+                    task.assignedToEmail!,
                     style: const TextStyle(
                       color: Color(0xFF20B2AA),
                       fontWeight: FontWeight.w500,
@@ -510,6 +583,40 @@ class _AdminDashboardState extends State<AdminDashboard>
                   ),
                 ],
               ),
+              
+              if (isCompleted && task.completionRemarks != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    border: Border.all(color: Colors.green.shade200),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Completion Remarks:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        task.completionRemarks!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ] else ...[
               Row(
                 children: [
@@ -523,49 +630,63 @@ class _AdminDashboardState extends State<AdminDashboard>
                   ),
                 ],
               ),
+            ],
+            
+            if (isUnassigned) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedCrewMembers[task.id],
-                      hint: const Text('Select Crew...'),
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
+                    child: SizedBox(
+                      height: 40,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedCrewMembers[task.id],
+                        hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          isDense: true,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
+                        items: crewMembers
+                            .where((member) => member.isAvailable)
+                            .map((member) => DropdownMenuItem(
+                                  value: member.id,
+                                  child: Text(
+                                    member.email,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCrewMembers[task.id] = value!;
+                          });
+                        },
                       ),
-                      items: crewMembers
-                          .where((member) => member.isAvailable)
-                          .map((member) => DropdownMenuItem(
-                                value: member.id,
-                                child: Text(member.email),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCrewMembers[task.id] = value!;
-                        });
-                      },
                     ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: _selectedCrewMembers[task.id] != null
-                        ? () => _assignTask(task.id)
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF20B2AA),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
+                  SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: _selectedCrewMembers[task.id] != null
+                          ? () => _assignTask(task.id)
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF20B2AA),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
+                      child: const Text('Assign', style: TextStyle(fontSize: 14)),
                     ),
-                    child: const Text('Assign'),
                   ),
                 ],
               ),
