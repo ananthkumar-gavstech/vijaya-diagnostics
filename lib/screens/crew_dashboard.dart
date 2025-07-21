@@ -62,9 +62,9 @@ class _CrewDashboardState extends State<CrewDashboard> {
       final userId = authProvider.currentUser?.id ?? '';
 
       String? photoUrl;
-      if (_selectedFile != null) {
+      if (_selectedFile != null && _selectedFile!.bytes != null) {
         photoUrl = await FirebaseService().uploadFile(
-          _selectedFile!.path ?? '',
+          _selectedFile!.bytes!,
           'aadhaar_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
       }
