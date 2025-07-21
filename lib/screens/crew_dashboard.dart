@@ -9,6 +9,7 @@ import '../providers/task_provider.dart';
 import '../services/firebase_service.dart';
 import '../models/task.dart' as app_task;
 import '../models/user.dart';
+import '../utils/responsive.dart';
 
 class CrewDashboard extends StatefulWidget {
   const CrewDashboard({super.key});
@@ -426,15 +427,18 @@ class _CrewDashboardState extends State<CrewDashboard> {
   Widget _buildOnboardingView() {
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        margin: const EdgeInsets.all(16),
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveHelper.isMobile(context) ? 
+            MediaQuery.of(context).size.width * 0.95 : 600,
+        ),
+        margin: ResponsiveHelper.getResponsiveMargin(context),
         child: Card(
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -648,17 +652,21 @@ class _CrewDashboardState extends State<CrewDashboard> {
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, child) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Your Registered Location Section
-              _buildLocationSection(),
-              const SizedBox(height: 32),
-              
-              // Today's Duty Assignment Section
-              _buildDutyAssignmentSection(),
-            ],
+          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Your Registered Location Section
+                  _buildLocationSection(),
+                  SizedBox(height: ResponsiveHelper.isMobile(context) ? 24 : 32),
+                  
+                  // Today's Duty Assignment Section
+                  _buildDutyAssignmentSection(),
+                ],
+              );
+            },
           ),
         );
       },
@@ -668,7 +676,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
   Widget _buildLocationSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -684,10 +692,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Your Registered Location',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -711,13 +719,13 @@ class _CrewDashboardState extends State<CrewDashboard> {
               ),
             ),
           ],
-          const SizedBox(height: 20),
+          SizedBox(height: ResponsiveHelper.isMobile(context) ? 16 : 20),
           Row(
             children: [
-              const Text(
+              Text(
                 'Your Current Location',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
@@ -833,7 +841,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -849,10 +857,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Today\'s Duty Assignment',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),

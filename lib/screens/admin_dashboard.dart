@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/task_provider.dart';
 import '../models/task.dart';
 import '../models/user.dart';
+import '../utils/responsive.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -360,7 +361,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         }
 
         return Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -514,41 +515,72 @@ class _AdminDashboardState extends State<AdminDashboard>
     final isCompleted = task.status == TaskStatus.completed;
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(
+        bottom: ResponsiveHelper.isMobile(context) ? 12 : 16,
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    task.locationName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+            ResponsiveHelper.isMobile(context)
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.locationName,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(task.status),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getStatusText(task.status),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(task.status),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getStatusText(task.status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.locationName,
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(task.status),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getStatusText(task.status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
             
             if (task.latitude != null && task.longitude != null) ...[
               const SizedBox(height: 8),
@@ -633,63 +665,118 @@ class _AdminDashboardState extends State<AdminDashboard>
             ],
             
             if (isUnassigned) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedCrewMembers[task.id],
-                        hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(4),
+              SizedBox(height: ResponsiveHelper.isMobile(context) ? 8 : 12),
+              ResponsiveHelper.isMobile(context)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        height: 40,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedCrewMembers[task.id],
+                          hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            isDense: true,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                          items: crewMembers
+                              .where((member) => member.isAvailable)
+                              .map((member) => DropdownMenuItem(
+                                    value: member.id,
+                                    child: Text(
+                                      member.email,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCrewMembers[task.id] = value!;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          onPressed: _selectedCrewMembers[task.id] != null
+                              ? () => _assignTask(task.id)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF20B2AA),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                          isDense: true,
+                          child: const Text('Assign', style: TextStyle(fontSize: 14)),
                         ),
-                        items: crewMembers
-                            .where((member) => member.isAvailable)
-                            .map((member) => DropdownMenuItem(
-                                  value: member.id,
-                                  child: Text(
-                                    member.email,
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCrewMembers[task.id] = value!;
-                          });
-                        },
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: _selectedCrewMembers[task.id] != null
-                          ? () => _assignTask(task.id)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF20B2AA),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedCrewMembers[task.id],
+                            hint: const Text('Select Crew...', style: TextStyle(fontSize: 14)),
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              isDense: true,
+                            ),
+                            items: crewMembers
+                                .where((member) => member.isAvailable)
+                                .map((member) => DropdownMenuItem(
+                                      value: member.id,
+                                      child: Text(
+                                        member.email,
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCrewMembers[task.id] = value!;
+                              });
+                            },
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
-                      child: const Text('Assign', style: TextStyle(fontSize: 14)),
-                    ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          onPressed: _selectedCrewMembers[task.id] != null
+                              ? () => _assignTask(task.id)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF20B2AA),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          child: const Text('Assign', style: TextStyle(fontSize: 14)),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ],
           ],
         ),
@@ -724,7 +811,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         }
 
         return Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
