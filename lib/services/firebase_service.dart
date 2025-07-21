@@ -387,4 +387,51 @@ class FirebaseService {
       throw Exception('Failed to update user onboarding status: $e');
     }
   }
+
+  Future<List<app_task.Task>> getCompletedTasksForUser(String userId) async {
+    try {
+      final snapshot = await firestore
+          .collection('tasks')
+          .where('assignedToUserId', isEqualTo: userId)
+          .where('status', isEqualTo: app_task.TaskStatus.completed.toString())
+          .orderBy('updatedAt', descending: true)
+          .get();
+      return snapshot.docs
+          .map((doc) => app_task.Task.fromMap({...doc.data(), 'id': doc.id}))
+          .toList();
+    } catch (e) {
+      print('Firebase not configured, returning mock completed tasks');
+      return [
+        app_task.Task(
+          id: 'completed_task1',
+          locationName: 'Downtown Diagnostic Center',
+          assignedToUserId: userId,
+          assignedToEmail: 'crew.member@example.com',
+          status: app_task.TaskStatus.completed,
+          completionRemarks: 'Task completed successfully',
+          createdAt: DateTime.now().subtract(const Duration(days: 2)),
+          updatedAt: DateTime.now().subtract(const Duration(days: 1)),
+        ),
+      ];
+    }
+  }
+
+  Future<bool> hasActiveAssignedTasks(String userId) async {
+    try {
+      final snapshot = await firestore
+          .collection('tasks')
+          .where('assignedToUserId', isEqualTo: userId)
+          .where('status', whereIn: [
+            app_task.TaskStatus.assigned.toString(),
+            app_task.TaskStatus.enRoute.toString(),
+            app_task.TaskStatus.checkedIn.toString(),
+          ])
+          .limit(1)
+          .get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      print('Firebase not configured, returning mock active task status');
+      return userId == 'crew1';
+    }
+  }
 }

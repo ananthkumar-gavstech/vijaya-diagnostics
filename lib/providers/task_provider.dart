@@ -6,11 +6,13 @@ import '../services/firebase_service.dart';
 class TaskProvider extends ChangeNotifier {
   List<app_task.Task> _tasks = [];
   List<User> _crewMembers = [];
+  List<app_task.Task> _completedTasks = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<app_task.Task> get tasks => _tasks;
   List<User> get crewMembers => _crewMembers;
+  List<app_task.Task> get completedTasks => _completedTasks;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -151,5 +153,30 @@ class TaskProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<void> loadCompletedTasksForUser(String userId) async {
+    try {
+      _completedTasks = await _firebaseService.getCompletedTasksForUser(userId);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateCrewAvailability() async {
+    try {
+      for (var member in _crewMembers) {
+        final hasActiveTasks = await _firebaseService.hasActiveAssignedTasks(member.id);
+        if (member.isAvailable == hasActiveTasks) {
+          await _firebaseService.updateUserAvailability(member.id, !hasActiveTasks);
+        }
+      }
+      await loadCrewMembers();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
   }
 }
