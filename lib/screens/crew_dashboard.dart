@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/task_provider.dart';
 import '../services/firebase_service.dart';
 import '../models/task.dart' as app_task;
+import '../models/user.dart';
 
 class CrewDashboard extends StatefulWidget {
   const CrewDashboard({super.key});
@@ -48,13 +49,18 @@ class _CrewDashboardState extends State<CrewDashboard> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
     
-    if (user != null && user.latitude != null && user.longitude != null) {
+    if (user != null) {
       setState(() {
-        _onboardingCompleted = true;
-        _userLatitude = user.latitude;
-        _userLongitude = user.longitude;
+        _onboardingCompleted = user.onboardingStatus == OnboardingStatus.verified;
+        if (user.latitude != null && user.longitude != null) {
+          _userLatitude = user.latitude;
+          _userLongitude = user.longitude;
+        }
       });
-      await _loadAssignedTasks();
+      
+      if (_onboardingCompleted) {
+        await _loadAssignedTasks();
+      }
       await _getCurrentLocation();
     }
   }
@@ -278,6 +284,15 @@ class _CrewDashboardState extends State<CrewDashboard> {
       final userId = authProvider.currentUser?.id ?? '';
 
       await taskProvider.updateUserLocation(userId, latitude, longitude);
+
+      // Update onboarding status in Firebase first
+      if (userId.isNotEmpty) {
+        try {
+          await FirebaseService().updateUserOnboardingStatus(userId, OnboardingStatus.verified);
+        } catch (e) {
+          print('Error updating onboarding status: $e');
+        }
+      }
 
       setState(() {
         _userLatitude = latitude;

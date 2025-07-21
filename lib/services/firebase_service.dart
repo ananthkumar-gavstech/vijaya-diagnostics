@@ -376,4 +376,15 @@ class FirebaseService {
       print('Failed to initialize default data: $e');
     }
   }
+
+  Future<void> updateUserOnboardingStatus(String userId, app_user.OnboardingStatus status) async {
+    try {
+      await firestore.collection('users').doc(userId).update({
+        'onboardingStatus': status.toString(),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw Exception('Failed to update user onboarding status: $e');
+    }
+  }
 }
