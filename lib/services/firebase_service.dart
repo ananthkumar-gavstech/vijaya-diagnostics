@@ -246,6 +246,54 @@ class FirebaseService {
     }
   }
 
+  Future<List<app_task.Task>> getTasksForUser(String userId) async {
+    try {
+      final snapshot = await firestore
+          .collection('tasks')
+          .where('assignedToUserId', isEqualTo: userId)
+          .get();
+      return snapshot.docs
+          .map((doc) => app_task.Task.fromMap({...doc.data(), 'id': doc.id}))
+          .toList();
+    } catch (e) {
+      print('Firebase not configured, returning mock assigned tasks');
+      return [
+        app_task.Task(
+          id: 'task1',
+          locationName: 'Downtown Diagnostic Center',
+          assignedToUserId: userId,
+          assignedToEmail: 'crew.member@example.com',
+          status: app_task.TaskStatus.assigned,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+    }
+  }
+
+  Future<void> updateTaskStatus(String taskId, app_task.TaskStatus status) async {
+    try {
+      await firestore.collection('tasks').doc(taskId).update({
+        'status': status.toString(),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw Exception('Failed to update task status: $e');
+    }
+  }
+
+  Future<void> updateUserLocation(String userId, double latitude, double longitude) async {
+    try {
+      await firestore.collection('users').doc(userId).update({
+        'latitude': latitude,
+        'longitude': longitude,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw Exception('Failed to update user location: $e');
+    }
+  }
+
   Future<void> initializeDefaultData() async {
     try {
       final tasksSnapshot = await firestore.collection('tasks').get();

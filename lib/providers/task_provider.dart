@@ -115,6 +115,39 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<app_task.Task>> getTasksForUser(String userId) async {
+    try {
+      return await _firebaseService.getTasksForUser(userId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return [];
+    }
+  }
+
+  Future<bool> updateTaskStatus(String taskId, app_task.TaskStatus status) async {
+    try {
+      await _firebaseService.updateTaskStatus(taskId, status);
+      await loadTasks();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateUserLocation(String userId, double latitude, double longitude) async {
+    try {
+      await _firebaseService.updateUserLocation(userId, latitude, longitude);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();

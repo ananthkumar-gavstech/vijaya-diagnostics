@@ -56,5 +56,7 @@ class Task {
 enum TaskStatus {
   unassigned,
   assigned,
+  enRoute,
+  checkedIn,
   completed,
 }
