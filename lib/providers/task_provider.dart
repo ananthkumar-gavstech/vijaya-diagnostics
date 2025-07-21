@@ -77,6 +77,44 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> createTask(String locationName, double? latitude, double? longitude) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _firebaseService.createTask(locationName, latitude, longitude);
+      await loadTasks();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> createCrewMember(String email, String name) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _firebaseService.createCrewMember(email, name);
+      await loadCrewMembers();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();

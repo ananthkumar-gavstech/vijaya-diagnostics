@@ -198,6 +198,44 @@ class FirebaseService {
     }
   }
 
+  Future<void> createTask(String locationName, double? latitude, double? longitude) async {
+    try {
+      final taskId = firestore.collection('tasks').doc().id;
+      final task = app_task.Task(
+        id: taskId,
+        locationName: locationName,
+        latitude: latitude,
+        longitude: longitude,
+        status: app_task.TaskStatus.unassigned,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await firestore.collection('tasks').doc(taskId).set(task.toMap());
+    } catch (e) {
+      throw Exception('Failed to create task: $e');
+    }
+  }
+
+  Future<void> createCrewMember(String email, String name) async {
+    try {
+      final userId = firestore.collection('users').doc().id;
+      final user = app_user.User(
+        id: userId,
+        email: email,
+        name: name,
+        userType: app_user.UserType.crewMember,
+        isAvailable: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await firestore.collection('users').doc(userId).set(user.toMap());
+    } catch (e) {
+      throw Exception('Failed to create crew member: $e');
+    }
+  }
+
   Future<String> uploadFile(Uint8List fileBytes, String fileName) async {
     try {
       final ref = storage.ref().child('uploads/$fileName');

@@ -17,6 +17,17 @@ class _AdminDashboardState extends State<AdminDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Map<String, String> _selectedCrewMembers = {};
+  
+  final _taskFormKey = GlobalKey<FormState>();
+  final _locationNameController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
+  bool _showTaskForm = false;
+  
+  final _crewFormKey = GlobalKey<FormState>();
+  final _crewEmailController = TextEditingController();
+  final _crewNameController = TextEditingController();
+  bool _showCrewForm = false;
 
   @override
   void initState() {
@@ -30,6 +41,11 @@ class _AdminDashboardState extends State<AdminDashboard>
   @override
   void dispose() {
     _tabController.dispose();
+    _locationNameController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _crewEmailController.dispose();
+    _crewNameController.dispose();
     super.dispose();
   }
 
@@ -63,6 +79,59 @@ class _AdminDashboardState extends State<AdminDashboard>
       setState(() {
         _selectedCrewMembers.remove(taskId);
       });
+    }
+  }
+
+  Future<void> _createTask() async {
+    if (!_taskFormKey.currentState!.validate()) return;
+
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    final latitude = _latitudeController.text.isNotEmpty 
+        ? double.tryParse(_latitudeController.text) 
+        : null;
+    final longitude = _longitudeController.text.isNotEmpty 
+        ? double.tryParse(_longitudeController.text) 
+        : null;
+
+    final success = await taskProvider.createTask(
+      _locationNameController.text,
+      latitude,
+      longitude,
+    );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task created successfully!'),
+          backgroundColor: Color(0xFF20B2AA),
+        ),
+      );
+      _locationNameController.clear();
+      _latitudeController.clear();
+      _longitudeController.clear();
+      setState(() => _showTaskForm = false);
+    }
+  }
+
+  Future<void> _createCrewMember() async {
+    if (!_crewFormKey.currentState!.validate()) return;
+
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    final success = await taskProvider.createCrewMember(
+      _crewEmailController.text,
+      _crewNameController.text,
+    );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Crew member added successfully!'),
+          backgroundColor: Color(0xFF20B2AA),
+        ),
+      );
+      _crewEmailController.clear();
+      _crewNameController.clear();
+      setState(() => _showCrewForm = false);
     }
   }
 
@@ -289,13 +358,104 @@ class _AdminDashboardState extends State<AdminDashboard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Duty Assignments',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Duty Assignments',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() => _showTaskForm = !_showTaskForm),
+                    icon: Icon(_showTaskForm ? Icons.close : Icons.add),
+                    label: Text(_showTaskForm ? 'Cancel' : 'Create New Task'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF20B2AA),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
+              if (_showTaskForm) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _taskFormKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: _locationNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Location Name',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) => value?.isEmpty == true ? 'Please enter location name' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _latitudeController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Latitude (optional)',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value?.isNotEmpty == true) {
+                                      final lat = double.tryParse(value!);
+                                      if (lat == null || lat < -90 || lat > 90) {
+                                        return 'Invalid latitude (-90 to 90)';
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _longitudeController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Longitude (optional)',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value?.isNotEmpty == true) {
+                                      final lng = double.tryParse(value!);
+                                      if (lng == null || lng < -180 || lng > 180) {
+                                        return 'Invalid longitude (-180 to 180)';
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _createTask,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF20B2AA),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Create Task'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: ListView.builder(
@@ -441,13 +601,76 @@ class _AdminDashboardState extends State<AdminDashboard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Crew Availability Status',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Crew Availability Status',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() => _showCrewForm = !_showCrewForm),
+                    icon: Icon(_showCrewForm ? Icons.close : Icons.person_add),
+                    label: Text(_showCrewForm ? 'Cancel' : 'Add Crew Member'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF20B2AA),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
+              if (_showCrewForm) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _crewFormKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: _crewEmailController,
+                            decoration: const InputDecoration(
+                              labelText: 'Email Address',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value?.isEmpty == true) return 'Please enter email';
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+                                return 'Please enter valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _crewNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) => value?.isEmpty == true ? 'Please enter name' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _createCrewMember,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF20B2AA),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Add Crew Member'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: ListView.builder(
