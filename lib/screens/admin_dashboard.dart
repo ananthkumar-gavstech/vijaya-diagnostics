@@ -54,6 +54,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     await taskProvider.loadTasks();
     await taskProvider.loadCrewMembers();
+    await taskProvider.updateCrewAvailability();
   }
 
   Future<void> _assignTask(String taskId) async {

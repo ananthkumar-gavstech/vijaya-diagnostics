@@ -31,6 +31,7 @@ class _CrewDashboardState extends State<CrewDashboard> {
   bool _locationCaptured = false;
   bool _onboardingCompleted = false;
   List<app_task.Task> _assignedTasks = [];
+  List<app_task.Task> _completedTasks = [];
   final TextEditingController _remarksController = TextEditingController();
 
   @override
@@ -69,13 +70,22 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
   Future<void> _loadAssignedTasks() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    final userId = authProvider.currentUser?.id ?? '';
 
-    final tasks = await taskProvider.getTasksForUser(userId);
-    setState(() {
-      _assignedTasks = tasks;
-    });
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser != null) {
+      try {
+        final tasks = await FirebaseService().getTasksForUser(currentUser.id);
+        final completedTasks = await FirebaseService().getCompletedTasksForUser(currentUser.id);
+        setState(() {
+          _assignedTasks = tasks.where((task) => task.status != app_task.TaskStatus.completed).toList();
+          _completedTasks = completedTasks;
+        });
+      } catch (e) {
+        print('Error loading tasks: $e');
+      }
+    }
+
   }
 
   Future<void> _acceptDuty(String taskId) async {
@@ -685,6 +695,10 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
                   // Today's Duty Assignment Section
                   _buildDutyAssignmentSection(),
+                  SizedBox(height: ResponsiveHelper.isMobile(context) ? 24 : 32),
+                  
+                  // Completed Tasks History Section
+                  _buildCompletedTasksSection(),
                 ],
               );
             },
@@ -1269,5 +1283,157 @@ class _CrewDashboardState extends State<CrewDashboard> {
 
   double _degreesToRadians(double degrees) {
     return degrees * (math.pi / 180);
+  }
+
+  Widget _buildCompletedTasksSection() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveCardPadding(context)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Completed Tasks History',
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_completedTasks.isEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.history, color: Colors.grey),
+                  SizedBox(width: 12),
+                  Text(
+                    'No completed tasks yet',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _completedTasks.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final task = _completedTasks[index];
+                return _buildCompletedTaskCard(task);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedTaskCard(app_task.Task task) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade600,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.locationName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Completed on ${task.updatedAt.day}/${task.updatedAt.month}/${task.updatedAt.year}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (task.completionRemarks != null && task.completionRemarks!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Completion Notes:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    task.completionRemarks!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
