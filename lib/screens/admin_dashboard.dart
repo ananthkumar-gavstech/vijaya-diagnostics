@@ -247,7 +247,10 @@ class _AdminDashboardState extends State<AdminDashboard>
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _tabController.animateTo(0),
+                                onTap: () {
+                                  _tabController.animateTo(0);
+                                  setState(() {});
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
@@ -274,7 +277,10 @@ class _AdminDashboardState extends State<AdminDashboard>
                             ),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () => _tabController.animateTo(1),
+                                onTap: () {
+                                  _tabController.animateTo(1);
+                                  setState(() {});
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
@@ -479,7 +485,7 @@ class _AdminDashboardState extends State<AdminDashboard>
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -691,24 +697,66 @@ class _AdminDashboardState extends State<AdminDashboard>
   Widget _buildAvailabilityCard(User member) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        title: Text(member.email),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: member.isAvailable 
-                ? const Color(0xFF20B2AA) 
-                : const Color(0xFFDC3545),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            member.isAvailable ? 'Available' : 'Unavailable',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.name ?? 'No Name',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        member.email,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (member.latitude != null && member.longitude != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Location: ${member.latitude!.toStringAsFixed(6)}, ${member.longitude!.toStringAsFixed(6)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: member.isAvailable 
+                        ? const Color(0xFF20B2AA) 
+                        : const Color(0xFFDC3545),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    member.isAvailable ? 'Available' : 'Unavailable',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
+          ],
         ),
       ),
     );
